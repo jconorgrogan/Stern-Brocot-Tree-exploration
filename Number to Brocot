@@ -1,0 +1,42 @@
+import matplotlib.pyplot as plt
+import numpy as np
+
+def find_fraction_for_number(target_number, steps):
+    pL, qL = 0, 1
+    pR, qR = 1, 0
+    pM, qM = 1, 1  # Start with the fraction 1/1
+    path = []
+    for _ in range(steps):
+        if pM / qM < target_number:
+            path.append('R')
+            pL, qL = pM, qM
+        else:
+            path.append('L')
+            pR, qR = pM, qM
+        pM, qM = pL + pR, qL + qR
+    return path
+
+def plot_path_for_number(path):
+    positions = [0]  # Starting position
+    current_position = 0
+    for move in path:
+        if move == 'R':
+            current_position -= 1  # Move down for 'R'
+        elif move == 'L':
+            current_position += 1  # Move up for 'L'
+        positions.append(current_position)
+
+    plt.figure(figsize=(10, 6))
+    plt.plot(positions, linestyle='-', marker='', color='blue')
+    plt.title(f'Path to Approximate {target_number}')
+    plt.xlabel('Step Number')
+    plt.ylabel('Vertical Position (Down for R, Up for L)')
+    plt.grid(True)
+    plt.show()
+
+# Example: Approximate the number e (2.718281828459045)
+target_number =  2.7182818284
+steps = 40  # Adjust the number of steps to refine the approximation
+path = find_fraction_for_number(target_number, steps)
+
+plot_path_for_number(path)
