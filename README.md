@@ -1,4 +1,8 @@
-# SternBrocotship-
+# Stern-Brocot Trees
+These magical things are underappreciated in math and number theory, see https://en.wikipedia.org/wiki/Stern%E2%80%93Brocot_tree
+
+
+Here I try a number of different unique approaches to evaluating stern brocot trees. I think they really help you understand a potential "meaning" of e, Eulers number, among other things 
 Coding interesting visualizations of Stern-Brocot trees
 
 There are a few ways to visualize things; combined eg 
