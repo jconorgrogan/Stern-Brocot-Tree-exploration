@@ -1,17 +1,7 @@
 from typing import List, Tuple
-import pandas as pd
+import plotly.graph_objects as go
 
 def sb_tree(rn: List[Tuple[int, int]], n: int) -> List[Tuple[int, int]]:
-    """
-    Generate the Stern-Brocot tree up to level n.
-    
-    Parameters:
-    rn (List[Tuple[int, int]]): The initial fractions [(0, 1), (1, 0)].
-    n (int): The desired level to generate the tree up to.
-    
-    Returns:
-    List[Tuple[int, int]]: The Stern-Brocot tree up to level n.
-    """
     if not n:
         return rn
     def new_rn():
@@ -21,27 +11,9 @@ def sb_tree(rn: List[Tuple[int, int]], n: int) -> List[Tuple[int, int]]:
     return sb_tree(list(new_rn()), n-1)
 
 def format_tree(tree: List[List[Tuple[int, int]]]) -> List[List[str]]:
-    """
-    Format the Stern-Brocot tree to display fractions.
-    
-    Parameters:
-    tree (List[List[Tuple[int, int]]]): The generated Stern-Brocot tree.
-    
-    Returns:
-    List[List[str]]: The formatted Stern-Brocot tree with fractions as strings.
-    """
     return [[f"{num}/{den}" for num, den in level] for level in tree]
 
 def unique_in_level(formatted_tree: List[List[str]]) -> List[List[str]]:
-    """
-    Extract unique fractions introduced at each level of the Stern-Brocot tree.
-    
-    Parameters:
-    formatted_tree (List[List[str]]): The formatted Stern-Brocot tree with fractions as strings.
-    
-    Returns:
-    List[List[str]]: Unique fractions introduced at each level.
-    """
     unique_fractions = []
     seen = set()
     for level in formatted_tree:
@@ -53,11 +25,48 @@ def unique_in_level(formatted_tree: List[List[str]]) -> List[List[str]]:
         unique_fractions.append(new_level)
     return unique_fractions
 
-# Example usage to generate and format the Stern-Brocot tree for 5 levels
-tree = [list(sb_tree([(0, 1), (1, 0)], i)) for i in range(6)]  # Generate tree up to level 5
-formatted_tree = format_tree(tree)  # Format the tree with fractions as strings
-unique_fractions = unique_in_level(formatted_tree)  # Extract unique fractions for each level
+# Generate the Stern-Brocot tree up to a specific level
+tree_depth = 10  # Adjust this value based on your computational constraints and needs
+tree = [list(sb_tree([(0, 1), (1, 0)], i)) for i in range(tree_depth)]
+formatted_tree = format_tree(tree)
+unique_fractions = unique_in_level(formatted_tree)
 
-# Display the unique fractions for each level (for demonstration)
-for i, level in enumerate(unique_fractions, 1):
-    print(f"Level {i}: {', '.join(level)}")
+# Prepare data for Plotly visualization
+x_values = []
+y_values = []
+texts = []
+
+for level, fractions in enumerate(unique_fractions, start=1):
+    for fraction in fractions:
+        num, den = map(int, fraction.split('/'))
+        if den != 0:  # Avoid dividing by zero
+            x_values.append(num / den)
+            y_values.append(level)
+            texts.append(f'{fraction}')
+
+# Create Plotly figure for interactive visualization with enhanced text styles
+fig = go.Figure()
+fig.add_trace(go.Scatter(
+    x=x_values, 
+    y=y_values, 
+    mode='markers+text', 
+    text=texts, 
+    textposition="bottom center", 
+    marker=dict(size=5),
+    textfont=dict(  # Enhancing text font properties
+        size=10,  # Increased text size for better legibility
+        color="black",
+        family="Arial, bold"  # Making text bold
+    )
+))
+
+# Update layout for readability and interactivity
+fig.update_layout(
+    title='Interactive Stern-Brocot Tree Visualization',
+    xaxis_title='Fraction Value',
+    yaxis_title='Level',
+    yaxis=dict(autorange='reversed'),  # Reverse Y-axis to have the root at the top
+    template="plotly_white",
+)
+
+fig.show()
