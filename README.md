@@ -10,7 +10,5 @@ Couldnt find any code that generated them so I did it myself.
 I also try a number of different/ unique approaches to evaluating stern brocot trees. I think they really help you understand a potential "meaning" of e, Eulers number, among other things 
 
 
-This is the "operation space" of e^2
+This is what im calling the "operation space" of e^2
 <img width="997" alt="Pasted Graphic 35" src="https://github.com/jconorgrogan/SternBrocotship-/assets/130090573/ddab1ec6-fd0b-4542-809d-7fd0541ed48d">
-
-or discrete which is what my code does
