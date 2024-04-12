@@ -1,7 +1,7 @@
 # Stern-Brocot Trees
 These magical things are underappreciated in math and number theory, see https://en.wikipedia.org/wiki/Stern%E2%80%93Brocot_tree
 
-Couldnt find any code that generated them so I did it myself. 
+Couldnt find any code that generated them so I did it myself. The tree is zoomable; double click to zoom out. 
 
 <img width="775" alt="image" src="https://github.com/jconorgrogan/Stern-Brocot-Tree-exploration/assets/130090573/5aac0dc4-c698-4eb7-b765-efc8654a313a">
 
