@@ -7,8 +7,9 @@ Couldnt find any code that generated them so I did it myself. The tree is zoomab
 
 
 
-I also try a number of different/ unique approaches to evaluating stern brocot trees. I think they really help you understand a potential "meaning" of e, Eulers number, among other things 
+I also try a number of different/ unique approaches to evaluating stern brocot trees. 
 
+As an example, some interesting things I've noticed about the Stern-Brocot tree is related to Khinchin's constant- see https://en.wikipedia.org/wiki/Khinchin%27s_constant#:~:text=In%20number%20theory%2C%20Aleksandr%20Yakovlevich,is%20known%20as%20Khinchin's%20constant. . Among the numbers x whose continued fraction expansions are known NOT to have this property are rational numbers, roots of quadratic equations (including the golden ratio Φ and the square roots of integers), and the base of the natural logarithm e.---- in other words, all numbers that are defined by repeatable or expiring patterns in stern brocot tree transversals. Said diffrently, numbers that adhere to Khinchin's constant would "zig zag" through this tree in a path that doesn't reveal predictable or repeating patterns, unlike the periodic and terminating paths of quadratic irrationals and rational numbers. 
 
-This is what im calling the "operation space" of e^2
+2. As an example of repeatable continued fractions, This is what im calling the "operation space" of e^2; Its a visualization of essentially how the continued fraction of e^2 in "Stern brocot tree directions".  This number does NOT fit in with Khinchin's constant (I didn't even look it up if this is true, but am able to have confidence in this visually). In other words, knowledge of one slice could perfectly predict knowledge of future slices. 
 <img width="997" alt="Pasted Graphic 35" src="https://github.com/jconorgrogan/SternBrocotship-/assets/130090573/ddab1ec6-fd0b-4542-809d-7fd0541ed48d">
