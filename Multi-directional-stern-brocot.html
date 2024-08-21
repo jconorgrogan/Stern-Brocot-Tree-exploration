@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Interactive 8-Directional Stern-Brocot Tree Visualization with Line Toggles</title>
+    <title>Interactive 8-Directional Stern-Brocot Tree Visualization without Labels</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.18.2/plotly.min.js"></script>
     <style>
         .checkbox-container {
@@ -23,10 +23,22 @@
             display: inline-block;
             margin-right: 5px;
         }
+        .input-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #layersInput {
+            margin-right: 10px;
+        }
     </style>
 </head>
 <body>
     <div id="myPlot" style="width:100%;height:700px;"></div>
+    <div class="input-container">
+        <input type="number" id="layersInput" min="1" max="10" value="6">
+        <button id="updateButton">Update Layers</button>
+    </div>
     <div class="checkbox-container" id="checkboxes"></div>
 
     <script>
@@ -84,7 +96,7 @@
             return num / den;
         }
 
-        const treeDepth = 6;
+        let treeDepth = 6;
         let tree = Array.from({length: treeDepth}, (_, i) => sbTree([[0, 1], [1, 1], [1, 0]], i));
         let formattedTree = formatTree(tree);
         let uniqueFractions = uniqueInLevel(formattedTree);
@@ -93,11 +105,10 @@
             x: [],
             y: [],
             text: [],
-            mode: 'markers+text',
+            mode: 'markers',
             type: 'scatter',
             name: key,
             marker: { color: treeColors[key], size: 5 },
-            textfont: { size: 9, family: "Arial, bold" },
             hoverinfo: 'text',
             visible: true
         }));
@@ -111,29 +122,8 @@
             line: { color: treeColors[key], width: 1 },
             hoverinfo: 'none',
             showlegend: false,
-            visible: false
+            visible: true
         }));
-
-        uniqueFractions.forEach((level, levelIndex) => {
-            level.forEach((fraction) => {
-                let fractionValue = getFractionValue(fraction);
-                
-                [
-                    [fractionValue, levelIndex],
-                    [fractionValue, -levelIndex],
-                    [-levelIndex, fractionValue],
-                    [-fractionValue, -levelIndex],
-                    [levelIndex, -fractionValue],
-                    [-fractionValue, levelIndex],
-                    [levelIndex, -fractionValue],
-                    [fractionValue, levelIndex]
-                ].forEach(([x, y], index) => {
-                    treeData[index].x.push(x);
-                    treeData[index].y.push(y);
-                    treeData[index].text.push(fraction);
-                });
-            });
-        });
 
         function addLines(treeIndex) {
             lineData[treeIndex].x = [];
@@ -144,9 +134,15 @@
                     let [x2, y2] = [treeData[treeIndex].x[j], treeData[treeIndex].y[j]];
                     let [num1, den1] = treeData[treeIndex].text[i].split('/').map(Number);
                     let [num2, den2] = treeData[treeIndex].text[j].split('/').map(Number);
+                    
+                    // Check if the fractions are neighbors in the Stern-Brocot tree
                     if (Math.abs(num1 * den2 - num2 * den1) === 1) {
-                        lineData[treeIndex].x.push(x1, x2, null);
-                        lineData[treeIndex].y.push(y1, y2, null);
+                        // Check if the points are in adjacent levels
+                        if (Math.abs(Math.abs(x1) - Math.abs(x2)) <= 1 && 
+                            Math.abs(Math.abs(y1) - Math.abs(y2)) <= 1) {
+                            lineData[treeIndex].x.push(x1, x2, null);
+                            lineData[treeIndex].y.push(y1, y2, null);
+                        }
                     }
                 }
             }
@@ -160,7 +156,7 @@
             title: 'Interactive 8-Directional Stern-Brocot Tree',
             xaxis: {
                 title: '±Fraction Value / ±Tree Level',
-                range: [-6, 6],
+                range: [-treeDepth - 1, treeDepth + 1],
                 dtick: 1,
                 zeroline: true,
                 zerolinecolor: 'black',
@@ -168,7 +164,7 @@
             },
             yaxis: {
                 title: '±Tree Level / ±Fraction Value',
-                range: [-6, 6],
+                range: [-treeDepth - 1, treeDepth + 1],
                 dtick: 1,
                 zeroline: true,
                 zerolinecolor: 'black',
@@ -198,6 +194,7 @@
             let checkbox = document.createElement('input');
             checkbox.type = 'checkbox';
             checkbox.id = `checkbox-${index}`;
+            checkbox.checked = true; // Set initial state to checked
             
             let label = document.createElement('label');
             label.htmlFor = `checkbox-${index}`;
@@ -209,10 +206,85 @@
             checkboxContainer.appendChild(checkboxItem);
             
             checkbox.addEventListener('change', function() {
-                let update = {visible: [null, this.checked]};
-                Plotly.restyle('myPlot', update, [treeData.length + index]);
+                let update = {
+                    visible: [this.checked, this.checked]
+                };
+                Plotly.restyle('myPlot', update, [index, treeData.length + index]);
             });
         });
+
+        function updateVisualization() {
+            treeDepth = parseInt(document.getElementById('layersInput').value);
+            
+            tree = Array.from({length: treeDepth}, (_, i) => sbTree([[0, 1], [1, 1], [1, 0]], i));
+            formattedTree = formatTree(tree);
+            uniqueFractions = uniqueInLevel(formattedTree);
+
+            treeData.forEach(data => {
+                data.x = [];
+                data.y = [];
+                data.text = [];
+            });
+
+            lineData.forEach(data => {
+                data.x = [];
+                data.y = [];
+            });
+
+            uniqueFractions.forEach((level, levelIndex) => {
+                level.forEach((fraction) => {
+                    let fractionValue = getFractionValue(fraction);
+                    
+                    [
+                        [fractionValue, levelIndex],           // Blue (Down-Right)
+                        [fractionValue, -levelIndex],          // Red (Up-Left)
+                        [-levelIndex, fractionValue],          // Green (Right-Up)
+                        [-levelIndex, -fractionValue],         // Purple (Down-Left)
+                        [-fractionValue, -levelIndex],         // Orange (Left-Down)
+                        [-fractionValue, levelIndex],          // Cyan (Up-Right)
+                        [levelIndex, fractionValue],           // Magenta (Left-Up)
+                        [levelIndex, -fractionValue]           // Lime (Right-Down)
+                    ].forEach(([x, y], index) => {
+                        treeData[index].x.push(x);
+                        treeData[index].y.push(y);
+                        treeData[index].text.push(fraction);
+                    });
+                });
+            });
+
+            Object.keys(treeColors).forEach((_, index) => addLines(index));
+
+            let data = [...treeData, ...lineData];
+
+            let layout = {
+                title: 'Interactive 8-Directional Stern-Brocot Tree',
+                xaxis: {
+                    title: '±Fraction Value / ±Tree Level',
+                    range: [-treeDepth - 1, treeDepth + 1],
+                    dtick: 1,
+                    zeroline: true,
+                    zerolinecolor: 'black',
+                    zerolinewidth: 2,
+                },
+                yaxis: {
+                    title: '±Tree Level / ±Fraction Value',
+                    range: [-treeDepth - 1, treeDepth + 1],
+                    dtick: 1,
+                    zeroline: true,
+                    zerolinecolor: 'black',
+                    zerolinewidth: 2,
+                },
+                showlegend: false,
+                hovermode: 'closest',
+                dragmode: 'pan',
+            };
+
+            Plotly.react('myPlot', data, layout, config);
+        }
+
+        updateVisualization();
+
+        document.getElementById('updateButton').addEventListener('click', updateVisualization);
     </script>
 </body>
 </html>
