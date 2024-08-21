@@ -8,6 +8,8 @@ Couldnt find any code that generated them so I did it myself. The tree is zoomab
 
 
 I also try a number of different/ unique approaches to evaluating stern brocot trees. 
+<img width="1325" alt="image" src="https://github.com/user-attachments/assets/c60c8b0b-a9f3-42fb-ac1f-04504dc6863a">
+
 
 As an example, some interesting things I've noticed about the Stern-Brocot tree is related to Khinchin's constant- see https://en.wikipedia.org/wiki/Khinchin%27s_constant#:~:text=In%20number%20theory%2C%20Aleksandr%20Yakovlevich,is%20known%20as%20Khinchin's%20constant. . Among the numbers x whose continued fraction expansions are known NOT to have this property are rational numbers, roots of quadratic equations (including the golden ratio Φ and the square roots of integers), and the base of the natural logarithm e.---- in other words, all numbers that are defined by repeatable or expiring patterns in stern brocot tree transversals. Said diffrently, numbers that adhere to Khinchin's constant would "zig zag" through this tree in a path that doesn't reveal predictable or repeating patterns, unlike the periodic and terminating paths of quadratic irrationals and rational numbers. 
 
