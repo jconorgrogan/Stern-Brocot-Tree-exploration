@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 8-Directional Stern-Brocot Tree Visualization with Line Toggles</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.18.2/plotly.min.js"></script>
+    <style>
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .checkbox-item {
+            margin: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="myPlot" style="width:100%;height:700px;"></div>
+    <div class="checkbox-container" id="checkboxes"></div>
+
+    <script>
+        const treeColors = {
+            'Blue (Down-Right)': 'blue',
+            'Red (Up-Left)': 'red',
+            'Green (Right-Up)': 'green',
+            'Purple (Down-Left)': 'purple',
+            'Orange (Left-Down)': 'orange',
+            'Cyan (Up-Right)': 'cyan',
+            'Magenta (Left-Up)': 'magenta',
+            'Lime (Right-Down)': 'lime'
+        };
+
+        function sbTree(rn, n) {
+            if (n === 0) return rn;
+            function newRn() {
+                let result = [];
+                for (let i = 0; i < rn.length - 1; i++) {
+                    result.push(rn[i]);
+                    result.push([rn[i][0] + rn[i+1][0], rn[i][1] + rn[i+1][1]]);
+                }
+                result.push(rn[rn.length - 1]);
+                return result;
+            }
+            return sbTree(newRn(), n - 1);
+        }
+
+        function formatTree(tree) {
+            return tree.map(level => 
+                level.map(([num, den]) => 
+                    den !== 0 ? `${num}/${den}` : ''
+                ).filter(x => x)
+            );
+        }
+
+        function uniqueInLevel(formattedTree) {
+            let uniqueFractions = [];
+            let seen = new Set();
+            for (let level of formattedTree) {
+                let newLevel = [];
+                for (let frac of level) {
+                    if (!seen.has(frac) && frac !== '0/1' && frac !== '1/0') {
+                        seen.add(frac);
+                        newLevel.push(frac);
+                    }
+                }
+                uniqueFractions.push(newLevel);
+            }
+            return uniqueFractions;
+        }
+
+        function getFractionValue(fraction) {
+            let [num, den] = fraction.split('/').map(Number);
+            return num / den;
+        }
+
+        const treeDepth = 6;
+        let tree = Array.from({length: treeDepth}, (_, i) => sbTree([[0, 1], [1, 1], [1, 0]], i));
+        let formattedTree = formatTree(tree);
+        let uniqueFractions = uniqueInLevel(formattedTree);
+
+        let treeData = Object.keys(treeColors).map(key => ({
+            x: [],
+            y: [],
+            text: [],
+            mode: 'markers+text',
+            type: 'scatter',
+            name: key,
+            marker: { color: treeColors[key], size: 5 },
+            textfont: { size: 9, family: "Arial, bold" },
+            hoverinfo: 'text',
+            visible: true
+        }));
+
+        let lineData = Object.keys(treeColors).map(key => ({
+            x: [],
+            y: [],
+            mode: 'lines',
+            type: 'scatter',
+            name: key + ' Lines',
+            line: { color: treeColors[key], width: 1 },
+            hoverinfo: 'none',
+            showlegend: false,
+            visible: false
+        }));
+
+        uniqueFractions.forEach((level, levelIndex) => {
+            level.forEach((fraction) => {
+                let fractionValue = getFractionValue(fraction);
+                
+                [
+                    [fractionValue, levelIndex],
+                    [fractionValue, -levelIndex],
+                    [-levelIndex, fractionValue],
+                    [-fractionValue, -levelIndex],
+                    [levelIndex, -fractionValue],
+                    [-fractionValue, levelIndex],
+                    [levelIndex, -fractionValue],
+                    [fractionValue, levelIndex]
+                ].forEach(([x, y], index) => {
+                    treeData[index].x.push(x);
+                    treeData[index].y.push(y);
+                    treeData[index].text.push(fraction);
+                });
+            });
+        });
+
+        function addLines(treeIndex) {
+            lineData[treeIndex].x = [];
+            lineData[treeIndex].y = [];
+            for (let i = 1; i < treeData[treeIndex].x.length; i++) {
+                for (let j = 0; j < i; j++) {
+                    let [x1, y1] = [treeData[treeIndex].x[i], treeData[treeIndex].y[i]];
+                    let [x2, y2] = [treeData[treeIndex].x[j], treeData[treeIndex].y[j]];
+                    let [num1, den1] = treeData[treeIndex].text[i].split('/').map(Number);
+                    let [num2, den2] = treeData[treeIndex].text[j].split('/').map(Number);
+                    if (Math.abs(num1 * den2 - num2 * den1) === 1) {
+                        lineData[treeIndex].x.push(x1, x2, null);
+                        lineData[treeIndex].y.push(y1, y2, null);
+                    }
+                }
+            }
+        }
+
+        Object.keys(treeColors).forEach((_, index) => addLines(index));
+
+        let data = [...treeData, ...lineData];
+
+        let layout = {
+            title: 'Interactive 8-Directional Stern-Brocot Tree',
+            xaxis: {
+                title: '±Fraction Value / ±Tree Level',
+                range: [-6, 6],
+                dtick: 1,
+                zeroline: true,
+                zerolinecolor: 'black',
+                zerolinewidth: 2,
+            },
+            yaxis: {
+                title: '±Tree Level / ±Fraction Value',
+                range: [-6, 6],
+                dtick: 1,
+                zeroline: true,
+                zerolinecolor: 'black',
+                zerolinewidth: 2,
+            },
+            showlegend: false,
+            hovermode: 'closest',
+            dragmode: 'pan',
+        };
+
+        let config = {
+            scrollZoom: true,
+            modeBarButtonsToAdd: ['resetScale2d']
+        };
+
+        Plotly.newPlot('myPlot', data, layout, config);
+
+        let checkboxContainer = document.getElementById('checkboxes');
+        Object.keys(treeColors).forEach((key, index) => {
+            let checkboxItem = document.createElement('div');
+            checkboxItem.className = 'checkbox-item';
+            
+            let colorBox = document.createElement('span');
+            colorBox.className = 'color-box';
+            colorBox.style.backgroundColor = treeColors[key];
+            
+            let checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `checkbox-${index}`;
+            
+            let label = document.createElement('label');
+            label.htmlFor = `checkbox-${index}`;
+            label.appendChild(document.createTextNode(key));
+            
+            checkboxItem.appendChild(colorBox);
+            checkboxItem.appendChild(checkbox);
+            checkboxItem.appendChild(label);
+            checkboxContainer.appendChild(checkboxItem);
+            
+            checkbox.addEventListener('change', function() {
+                let update = {visible: [null, this.checked]};
+                Plotly.restyle('myPlot', update, [treeData.length + index]);
+            });
+        });
+    </script>
+</body>
+</html>
