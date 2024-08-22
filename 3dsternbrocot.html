@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>3D Interactive 8-Directional Stern-Brocot Tree Visualization</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/plotly.js/2.18.2/plotly.min.js"></script>
+    <style>
+        .checkbox-container {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .checkbox-item {
+            margin: 5px;
+            display: flex;
+            align-items: center;
+        }
+        .color-box {
+            width: 20px;
+            height: 20px;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        .input-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        #layersInput {
+            margin-right: 10px;
+        }
+        .control-container {
+            display: flex;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        .control-container button {
+            margin: 0 5px;
+        }
+    </style>
+</head>
+<body>
+    <div id="myPlot" style="width:100%;height:700px;"></div>
+    <div class="input-container">
+        <input type="number" id="layersInput" min="1" max="10" value="6">
+        <button id="updateButton">Update Layers</button>
+    </div>
+    <div class="control-container">
+        <button id="orbitModeButton">Orbit Mode</button>
+        <button id="dragModeButton">Drag Mode</button>
+        <button id="resetViewButton">Reset View</button>
+    </div>
+    <div class="checkbox-container" id="checkboxes"></div>
+
+    <script>
+        const treeColors = {
+            'Blue (Down-Right)': 'blue',
+            'Red (Up-Left)': 'red',
+            'Green (Right-Up)': 'green',
+            'Purple (Down-Left)': 'purple',
+            'Orange (Left-Down)': 'orange',
+            'Cyan (Up-Right)': 'cyan',
+            'Magenta (Left-Up)': 'magenta',
+            'Lime (Right-Down)': 'lime'
+        };
+
+        // Extend treeColors with additional branches
+        for (let i = 0; i < 8; i++) {
+            for (let j = 1; j <= 10; j++) {
+                treeColors[`Branch ${i}-${j}`] = `hsl(${Math.random() * 360}, 70%, 50%)`;
+            }
+        }
+
+        function sbTree(rn, n) {
+            if (n === 0) return rn;
+            function newRn() {
+                let result = [];
+                for (let i = 0; i < rn.length - 1; i++) {
+                    result.push(rn[i]);
+                    result.push([rn[i][0] + rn[i+1][0], rn[i][1] + rn[i+1][1]]);
+                }
+                result.push(rn[rn.length - 1]);
+                return result;
+            }
+            return sbTree(newRn(), n - 1);
+        }
+
+        function formatTree(tree) {
+            return tree.map(level => 
+                level.map(([num, den]) => 
+                    den !== 0 ? `${num}/${den}` : ''
+                ).filter(x => x)
+            );
+        }
+
+        function uniqueInLevel(formattedTree) {
+            let uniqueFractions = [];
+            let seen = new Set();
+            for (let level of formattedTree) {
+                let newLevel = [];
+                for (let frac of level) {
+                    if (!seen.has(frac) && frac !== '0/1' && frac !== '1/0') {
+                        seen.add(frac);
+                        newLevel.push(frac);
+                    }
+                }
+                uniqueFractions.push(newLevel);
+            }
+            return uniqueFractions;
+        }
+
+        function getFractionValue(fraction) {
+            let [num, den] = fraction.split('/').map(Number);
+            return num / den;
+        }
+
+        let treeDepth = 6;
+        let tree = Array.from({length: treeDepth}, (_, i) => sbTree([[0, 1], [1, 1], [1, 0]], i));
+        let formattedTree = formatTree(tree);
+        let uniqueFractions = uniqueInLevel(formattedTree);
+
+        let treeData = Object.keys(treeColors).map(key => ({
+            x: [],
+            y: [],
+            z: [],
+            text: [],
+            mode: 'markers',
+            type: 'scatter3d',
+            name: key,
+            marker: { color: treeColors[key], size: 3 },
+            hoverinfo: 'text',
+            visible: true
+        }));
+
+        let lineData = Object.keys(treeColors).map(key => ({
+            x: [],
+            y: [],
+            z: [],
+            mode: 'lines',
+            type: 'scatter3d',
+            name: key + ' Lines',
+            line: { color: treeColors[key], width: 1 },
+            hoverinfo: 'none',
+            showlegend: false,
+            visible: true
+        }));
+
+        function addLines(treeIndex) {
+            lineData[treeIndex].x = [];
+            lineData[treeIndex].y = [];
+            lineData[treeIndex].z = [];
+            for (let i = 1; i < treeData[treeIndex].x.length; i++) {
+                for (let j = 0; j < i; j++) {
+                    let [x1, y1, z1] = [treeData[treeIndex].x[i], treeData[treeIndex].y[i], treeData[treeIndex].z[i]];
+                    let [x2, y2, z2] = [treeData[treeIndex].x[j], treeData[treeIndex].y[j], treeData[treeIndex].z[j]];
+                    let [num1, den1] = treeData[treeIndex].text[i].split('/').map(Number);
+                    let [num2, den2] = treeData[treeIndex].text[j].split('/').map(Number);
+                    
+                    if (Math.abs(num1 * den2 - num2 * den1) === 1) {
+                        if (Math.abs(Math.abs(x1) - Math.abs(x2)) <= 1 && 
+                            Math.abs(Math.abs(y1) - Math.abs(y2)) <= 1 &&
+                            Math.abs(z1 - z2) === 1) {
+                            lineData[treeIndex].x.push(x1, x2, null);
+                            lineData[treeIndex].y.push(y1, y2, null);
+                            lineData[treeIndex].z.push(z1, z2, null);
+                        }
+                    }
+                }
+            }
+        }
+
+        Object.keys(treeColors).forEach((_, index) => addLines(index));
+
+        let data = [...treeData, ...lineData];
+
+        let layout = {
+            title: '3D Interactive 8-Directional Stern-Brocot Tree',
+            scene: {
+                xaxis: {title: '±Fraction Value / ±Tree Level'},
+                yaxis: {title: '±Tree Level / ±Fraction Value'},
+                zaxis: {title: 'Tree Depth', autorange: 'reversed'},
+                camera: {
+                    eye: {x: 1.5, y: 1.5, z: 1.5}
+                },
+                dragmode: 'orbit'
+            },
+            showlegend: false,
+            hovermode: 'closest',
+        };
+
+        let config = {
+            scrollZoom: true,
+            modeBarButtonsToAdd: ['resetCameraDefault3d']
+        };
+
+        Plotly.newPlot('myPlot', data, layout, config);
+
+        let checkboxContainer = document.getElementById('checkboxes');
+        Object.keys(treeColors).forEach((key, index) => {
+            let checkboxItem = document.createElement('div');
+            checkboxItem.className = 'checkbox-item';
+            
+            let colorBox = document.createElement('span');
+            colorBox.className = 'color-box';
+            colorBox.style.backgroundColor = treeColors[key];
+            
+            let checkbox = document.createElement('input');
+            checkbox.type = 'checkbox';
+            checkbox.id = `checkbox-${index}`;
+            checkbox.checked = true; // Set initial state to checked
+            
+            let label = document.createElement('label');
+            label.htmlFor = `checkbox-${index}`;
+            label.appendChild(document.createTextNode(key));
+            
+            checkboxItem.appendChild(colorBox);
+            checkboxItem.appendChild(checkbox);
+            checkboxItem.appendChild(label);
+            checkboxContainer.appendChild(checkboxItem);
+            
+            checkbox.addEventListener('change', function() {
+                let update = {
+                    visible: [this.checked, this.checked]
+                };
+                Plotly.restyle('myPlot', update, [index, treeData.length + index]);
+            });
+        });
+
+        function updateVisualization() {
+            treeDepth = parseInt(document.getElementById('layersInput').value);
+            
+            tree = Array.from({length: treeDepth}, (_, i) => sbTree([[0, 1], [1, 1], [1, 0]], i));
+            formattedTree = formatTree(tree);
+            uniqueFractions = uniqueInLevel(formattedTree);
+
+            treeData.forEach(data => {
+                data.x = [];
+                data.y = [];
+                data.z = [];
+                data.text = [];
+            });
+
+            lineData.forEach(data => {
+                data.x = [];
+                data.y = [];
+                data.z = [];
+            });
+
+            uniqueFractions.forEach((level, levelIndex) => {
+                level.forEach((fraction) => {
+                    let fractionValue = getFractionValue(fraction);
+                    let z = treeDepth - levelIndex; // Invert z-axis so root is at the top
+                    
+                    let baseDirections = [
+                        [fractionValue, levelIndex, z],           // Blue (Down-Right)
+                        [fractionValue, -levelIndex, z],          // Red (Up-Left)
+                        [-levelIndex, fractionValue, z],          // Green (Right-Up)
+                        [-levelIndex, -fractionValue, z],         // Purple (Down-Left)
+                        [-fractionValue, -levelIndex, z],         // Orange (Left-Down)
+                        [-fractionValue, levelIndex, z],          // Cyan (Up-Right)
+                        [levelIndex, fractionValue, z],           // Magenta (Left-Up)
+                        [levelIndex, -fractionValue, z]           // Lime (Right-Down)
+                    ];
+
+                    baseDirections.forEach(([x, y, z], index) => {
+                        treeData[index].x.push(x);
+                        treeData[index].y.push(y);
+                        treeData[index].z.push(z);
+                        treeData[index].text.push(fraction);
+
+                        // Add 10 additional branches for each base direction
+                        for (let j = 1; j <= 10; j++) {
+                            let angle = Math.random() * Math.PI * 2;
+                            let radius = Math.random() * 0.5; // Adjust this value to control spread
+                            let newX = x + Math.cos(angle) * radius;
+                            let newY = y + Math.sin(angle) * radius;
+                            let branchIndex = 8 + index * 10 + j - 1;
+                            treeData[branchIndex].x.push(newX);
+                            treeData[branchIndex].y.push(newY);
+                            treeData[branchIndex].z.push(z);
+                            treeData[branchIndex].text.push(fraction);
+                        }
+                    });
+                });
+            });
+
+            Object.keys(treeColors).forEach((_, index) => addLines(index));
+
+            startAnimation();
+        }
+
+        let animationFrameId;
+        let angles = Array(88).fill(0); // 8 original + 80 new branches
+        let rotationSpeeds = Array(88).fill(0).map(() => (Math.random() - 0.5) * 0.01);
+
+        function startAnimation() {
+            if (animationFrameId) {
+                cancelAnimationFrame(animationFrameId);
+            }
+            angles = Array(88).fill(0);
+            animateStep();
+        }
+
+        function animateStep() {
+            let data = [];
+
+            for (let i = 0; i < 88; i++) {
+                angles[i] += rotationSpeeds[i];
+                let cosAngle = Math.cos(angles[i]);
+                let sinAngle = Math.sin(angles[i]);
+
+                let rotatedX = treeData[i].x.map((x, idx) => 
+                    x * cosAngle - treeData[i].y[idx] * sinAngle
+                );
+                let rotatedY = treeData[i].x.map((x, idx) => 
+                    x * sinAngle + treeData[i].y[idx] * cosAngle
+                );
+
+                data.push({
+                    x: rotatedX,
+                    y: rotatedY,
+                    z: treeData[i].z,
+                    text: treeData[i].text,
+                    type: 'scatter3d',
+                    mode: 'markers',
+                    marker: treeData[i].marker,
+                    hoverinfo: 'text',
+                    visible: treeData[i].visible
+                });
+
+                let rotatedLineX = [];
+                let rotatedLineY = [];
+                for (let j = 0; j < lineData[i].x.length; j++) {
+                    if (lineData[i].x[j] === null) {
+                        rotatedLineX.push(null);
+                        rotatedLineY.push(null);
+                    } else {
+                        rotatedLineX.push(lineData[i].x[j] * cosAngle - lineData[i].y[j] * sinAngle);
+                        rotatedLineY.push(lineData[i].x[j] * sinAngle + lineData[i].y[j] * cosAngle);
+                    }
+                }
+
+                data.push({
+                    x: rotatedLineX,
+                    y: rotatedLineY,
+                    z: lineData[i].z,
+                    mode: 'lines',
+                    type: 'scatter3d',
+                    line: lineData[i].line,
+                    hoverinfo: 'none',
+                    showlegend: false,
+                    visible: lineData[i].visible
+                });
+            }
+
+            Plotly.react('myPlot', data, layout, config);
+            animationFrameId = requestAnimationFrame(animateStep);
+        }
+
+        updateVisualization();
+
+        document.getElementById('updateButton').addEventListener('click', updateVisualization);
+
+        document.getElementById('orbitModeButton').addEventListener('click', function() {
+            Plotly.relayout('myPlot', {'scene.dragmode': 'orbit'});
+        });
+
+        document.getElementById('dragModeButton').addEventListener('click', function() {
+            Plotly.relayout('myPlot', {'scene.dragmode': 'pan'});
+        });
+
+        document.getElementById('resetViewButton').addEventListener('click', function() {
+            Plotly.relayout('myPlot', {
+                'scene.camera': {
+                    eye: {x: 1.5, y: 1.5, z: 1.5},
+                    center: {x: 0, y: 0, z: 0},
+                    up: {x: 0, y: 0, z: 1}
+                }
+            });
+        });
+    </script>
+</body>
+</html>
