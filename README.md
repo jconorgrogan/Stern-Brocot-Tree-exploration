@@ -22,3 +22,14 @@ As an example, some interesting things I've noticed about the Stern-Brocot tree 
 - **Number of Slices at Step \( n \)**: At the \( n \)th step in both the geometric series for 1 and a branch of the Stern-Brocot tree, there will be \( 2^n \) slices or intervals.
 
 - **Geometric Series and Stern-Brocot Parallel**: Both the geometric series for 1 and a single branch of the Stern-Brocot tree generate a doubling of slices or intervals at each step, leading to \( 2^n \) slices by the \( n \)th step.
+
+- The number of slices at step n is 2× the total number of slices from all prior steps.
+
+-Therefore, at the infinite step, we can say that the points covered cover exactly 1/2 of the area of the interval from 0 to 1.
+
+
+
+
+
+
+
